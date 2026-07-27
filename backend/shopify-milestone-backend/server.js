@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import 'dotenv/config';
 import path from 'path';
+import fs from 'fs'; 
 import { fileURLToPath } from 'url';
 
 import shopify from './shopify.js';
@@ -9,16 +10,11 @@ import Milestone from './models/Milestone.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// Change this line (around line 34) from:
-// const STATIC_PATH = path.join(__dirname, '../../frontend/dist');
-
-// TO THIS (Points directly to the local dist folder in the backend repository):
-const STATIC_PATH = path.join(__dirname, 'dist');
 
 const PORT = 3000;
 const app = express();
 
-// 🚨 CRITICAL FOR RENDER DEPLOYMENTS: Tells Express to trust proxy headers from Render's load balancers
+// CRITICAL FOR RENDER DEPLOYMENTS: Trusts proxy headers from Render's load balancers
 app.set('trust proxy', true);
 
 // Global Tunnel Bypass Middleware
@@ -37,10 +33,15 @@ mongoose.connect(process.env.MONGO_URI)
 // 1. Ensure Shopify CSP headers are injected globally for iframe rendering
 app.use(shopify.cspHeaders());
 
-// 2. Static Asset Serving
-// Uniformly set to target the '../../frontend/dist' folder relative to your server script
-const STATIC_PATH = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(STATIC_PATH, { index: false }));
+// 2. Dynamic Asset Path Detector (Declared exactly ONCE)
+let DETECTED_STATIC_PATH = path.join(__dirname, 'dist');
+
+if (!fs.existsSync(DETECTED_STATIC_PATH) || !fs.existsSync(path.join(DETECTED_STATIC_PATH, 'index.html'))) {
+  DETECTED_STATIC_PATH = path.join(__dirname, '../../frontend/dist');
+}
+
+console.log(`📂 Express is actively serving static files from: ${DETECTED_STATIC_PATH}`);
+app.use(express.static(DETECTED_STATIC_PATH, { index: false }));
 
 // 3. Shopify Installation Handshake Routes
 app.get(shopify.config.auth.path, shopify.auth.begin());
@@ -111,16 +112,15 @@ app.get('/', shopify.ensureInstalledOnShop(), async (req, res) => {
   return res
     .status(200)
     .set('Content-Type', 'text/html')
-    .sendFile(path.join(STATIC_PATH, 'index.html'));
+    .sendFile(path.join(DETECTED_STATIC_PATH, 'index.html'));
 });
 
 // 7. Plain SPA Fallback Router
-// Aligned to serve index.html from the same static path to fix MIME type errors
 app.get('*', async (req, res) => {
   return res
     .status(200)
     .set('Content-Type', 'text/html')
-    .sendFile(path.join(STATIC_PATH, 'index.html'));
+    .sendFile(path.join(DETECTED_STATIC_PATH, 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`🚀 App backend processing requests live on port ${PORT}`)); 
+app.listen(PORT, () => console.log(`🚀 App backend processing requests live on port ${PORT}`));
