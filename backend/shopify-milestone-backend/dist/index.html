@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Milestone Cart App</title>
+    <!--
+      App Bridge React v4 — must be loaded before the React bundle.
+      apiKey is baked in at build time via VITE_SHOPIFY_API_KEY.
+      The 'host' query param is automatically appended by Shopify when loading the embedded app.
+    -->
+    <script>
+      // Expose the Shopify API key globally so App Bridge can pick it up
+      window.__SHOPIFY_API_KEY__ = "e2e0208df8a1bf7055671e3e2829cec5";
+    </script>
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
+      data-api-key="e2e0208df8a1bf7055671e3e2829cec5">
+    </script>
+    <script type="module" crossorigin src="./assets/index-Byc6zCPH.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CAaziDo7.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
