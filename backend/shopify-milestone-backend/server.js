@@ -9,6 +9,11 @@ import Milestone from './models/Milestone.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Change this line (around line 34) from:
+// const STATIC_PATH = path.join(__dirname, '../../frontend/dist');
+
+// TO THIS (Points directly to the local dist folder in the backend repository):
+const STATIC_PATH = path.join(__dirname, 'dist');
 
 const PORT = 3000;
 const app = express();
