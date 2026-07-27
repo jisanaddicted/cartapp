@@ -1,0 +1,14 @@
+# 1. Block root-level dependencies
+node_modules/
+
+# 2. Block deeply nested backend dependencies and configurations
+backend/shopify-milestone-backend/node_modules/
+backend/shopify-milestone-backend/.env
+
+# 3. Block frontend-level dependencies and build files
+frontend/node_modules/
+frontend/dist/
+
+# 4. OS/Log files
+.DS_Store
+*.log

@@ -3,7 +3,7 @@
 client_id = "e2e0208df8a1bf7055671e3e2829cec5"
 name = "cart-milestone-app"
 handle = "milestone-cart-tier-app"
-application_url = "https://facilitate-turning-recordings-saying.trycloudflare.com"
+application_url = "https://turbofan-grieving-trustful.ngrok-free.dev"
 embedded = true
 
 [webhooks]
@@ -11,8 +11,8 @@ api_version = "2026-07"
 
 [auth]
 redirect_urls = [
-  "https://facilitate-turning-recordings-saying.trycloudflare.com/api/auth",
-  "https://facilitate-turning-recordings-saying.trycloudflare.com/api/auth/callback"
+  "https://turbofan-grieving-trustful.ngrok-free.dev/api/auth",
+  "https://turbofan-grieving-trustful.ngrok-free.dev/api/auth/callback"
 ]
 
 [pos]
