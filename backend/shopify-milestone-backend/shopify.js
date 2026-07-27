@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { shopifyApp } from '@shopify/shopify-app-express';
 import { MongoDBSessionStorage } from '@shopify/shopify-app-session-storage-mongodb';
-import { ApiVersion } from '@shopify/shopify-api';
 
 // Sync session engine cleanly to your Mongo database string
 const sessionStorage = new MongoDBSessionStorage(
@@ -11,8 +10,8 @@ const sessionStorage = new MongoDBSessionStorage(
 
 const shopify = shopifyApp({
   api: {
-    apiVersion: ApiVersion.October25, // Keeps your API version stable
-    // Removed the empty restResources object that caused the crash!
+    // Passed as a direct string to guarantee a 1:1 match with your shopify.app.toml version
+    apiVersion: '2026-07', 
   },
   auth: {
     path: '/api/auth',
@@ -24,4 +23,4 @@ const shopify = shopifyApp({
   sessionStorage,
 });
 
-export default shopify; 
+export default shopify;

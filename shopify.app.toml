@@ -1,9 +1,7 @@
-# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
-
 client_id = "e2e0208df8a1bf7055671e3e2829cec5"
 name = "cart-milestone-app"
 handle = "milestone-cart-tier-app"
-application_url = "https://turbofan-grieving-trustful.ngrok-free.dev"
+application_url = "https://cartapp-q995.onrender.com"
 embedded = true
 
 [webhooks]
@@ -11,12 +9,6 @@ api_version = "2026-07"
 
 [auth]
 redirect_urls = [
-  "https://turbofan-grieving-trustful.ngrok-free.dev/api/auth",
-  "https://turbofan-grieving-trustful.ngrok-free.dev/api/auth/callback"
+  "https://cartapp-q995.onrender.com/api/auth",
+  "https://cartapp-q995.onrender.com/api/auth/callback"
 ]
-
-[pos]
-embedded = false
-
-[access_scopes]
-scopes = "read_products,write_orders,read_themes,write_themes"
