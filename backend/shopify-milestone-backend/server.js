@@ -10,24 +10,20 @@ import Milestone from './models/Milestone.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Forced to 8081 to prevent Shopify CLI environment overrides from stealing port 3000
 const PORT = 3000;
 const app = express();
-// Add right after: const app = express();
 
-// Place this right after: const app = express();
+// 🚨 CRITICAL FOR RENDER DEPLOYMENTS: Tells Express to trust proxy headers from Render's load balancers
+app.set('trust proxy', true);
 
 // Global Tunnel Bypass Middleware
-// Automatically injects the skip-warning header to handle direct browser window requests
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, ngrok-skip-browser-warning');
-  
-  // If a browser is directly loading the page, tell the tunnel service to skip the warning page
   res.setHeader('ngrok-skip-browser-warning', 'true');
-  
   next();
 });
+
 // Establish connection to database instance
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Connected seamlessly to MongoDB'))
@@ -35,12 +31,11 @@ mongoose.connect(process.env.MONGO_URI)
 
 // 1. Ensure Shopify CSP headers are injected globally for iframe rendering
 app.use(shopify.cspHeaders());
-// Locate this section in your server.js file
-// It needs to climb two directories up (../../) to reach the root frontend assets
-app.use(express.static(path.join(__dirname, '../../frontend/dist'), { index: false }));
 
-// 2. Static Asset Serving — serves CSS/JS/images ONLY, NOT index.html
-
+// 2. Static Asset Serving
+// Uniformly set to target the '../../frontend/dist' folder relative to your server script
+const STATIC_PATH = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(STATIC_PATH, { index: false }));
 
 // 3. Shopify Installation Handshake Routes
 app.get(shopify.config.auth.path, shopify.auth.begin());
@@ -50,7 +45,7 @@ app.get(
   shopify.redirectToShopifyOrAppRoot()
 );
 
-// 4. API Endpoints (Apply express.json middleware specifically to backend data routes)
+// 4. API Endpoints
 app.post(
   '/api/milestones', 
   express.json(), 
@@ -73,7 +68,7 @@ app.post(
   }
 );
 
-// 5. Exit-iframe handler: Breaks out of admin iframe when sessions are missing
+// 5. Exit-iframe handler
 app.get('/exitiframe', (req, res) => {
   const { shop } = req.query;
 
@@ -107,22 +102,20 @@ app.get('/exitiframe', (req, res) => {
 });
 
 // 6. Explicit Root Path Handler
-// This allows shopify.ensureInstalledOnShop() to intercept the baseline authentication 
-// parameters cleanly right at the root domain entry level without hitting path structure limits.
 app.get('/', shopify.ensureInstalledOnShop(), async (req, res) => {
   return res
     .status(200)
     .set('Content-Type', 'text/html')
-    .sendFile(path.join(__dirname, 'dist', 'index.html'));
+    .sendFile(path.join(STATIC_PATH, 'index.html'));
 });
 
 // 7. Plain SPA Fallback Router
-// Handles deep linking inside your React frontend application shell without triggering validation loops.
+// Aligned to serve index.html from the same static path to fix MIME type errors
 app.get('*', async (req, res) => {
   return res
     .status(200)
     .set('Content-Type', 'text/html')
-    .sendFile(path.join(__dirname, 'dist', 'index.html'));
+    .sendFile(path.join(STATIC_PATH, 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`🚀 App backend processing requests live on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 App backend processing requests live on port ${PORT}`)); 
