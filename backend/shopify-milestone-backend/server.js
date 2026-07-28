@@ -11,7 +11,7 @@ import Milestone from './models/Milestone.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const PORT = 3000;
+
 const app = express();
 
 // CRITICAL FOR RENDER DEPLOYMENTS: Trusts proxy headers from Render's load balancers
@@ -157,4 +157,7 @@ app.get('*', async (req, res) => {
     .sendFile(path.join(DETECTED_STATIC_PATH, 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`🚀 App backend processing requests live on port ${PORT}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 App backend processing requests live on port ${PORT}`);
+});
