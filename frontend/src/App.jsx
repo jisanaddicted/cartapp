@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Page, Layout, Card, Text, TextField, 
-  Button, BlockStack, InlineStack, Bleed, Divider, Banner, Spinner, Tabs
+  Button, BlockStack, InlineStack, Bleed, Divider, Banner, Spinner
 } from '@shopify/polaris';
 
 export default function App() {
@@ -9,21 +9,16 @@ export default function App() {
   const [textColor, setTextColor] = useState('#000000');
   const [milestones, setMilestones] = useState([]);
 
-  // Navigation Tabs state
-  const [selectedTab, setSelectedTab] = useState(0);
+  // Controlled tab string state matching the 'href' values for App Bridge tabs
+  const [currentTab, setCurrentTab] = useState('/');
 
   // App UI operational feedback states
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState(null);
 
-  // Simulated Drawer states (for testing calculation thresholds inside preview)
+  // Simulated Drawer states
   const [simulatedCartTotal, setSimulatedCartTotal] = useState(40);
-
-  const tabs = [
-    { id: 'settings-tab', title: 'Settings & Tiers', panelID: 'settings-panel' },
-    { id: 'preview-tab', title: 'Live Drawer Preview', panelID: 'preview-panel' }
-  ];
 
   const getSessionToken = async () => {
     if (window.shopify && typeof window.shopify.idToken === "function") {
@@ -65,6 +60,18 @@ export default function App() {
     };
 
     fetchSavedConfig();
+  }, []);
+
+  // Sync App Bridge tab clicks with your React component state
+  useEffect(() => {
+    const handleNavigation = (event) => {
+      // Intercept App Bridge context if navigating within the frame
+      const path = window.location.pathname;
+      setCurrentTab(path);
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    return () => window.removeEventListener('popstate', handleNavigation);
   }, []);
 
   const handleMilestoneChange = (index, field, value) => {
@@ -129,7 +136,6 @@ export default function App() {
     );
   }
 
-  // --- DRAWER MATHEMATICS PREVIEW LOGIC ---
   const sortedMilestones = [...milestones].sort((a, b) => a.threshold - b.threshold);
   const nextMilestone = sortedMilestones.find(m => simulatedCartTotal < m.threshold);
   const unlockedMilestones = sortedMilestones.filter(m => simulatedCartTotal >= m.threshold);
@@ -139,11 +145,17 @@ export default function App() {
 
   return (
     <Page title="Milestone Progress Manager">
-      {/* Container wrapper ensuring full visibility inside App Bridge frames */}
+      
+      {/* 🚀 ADD THIS: SHOPIFY APP BRIDGE NAVIGATION COMPONENT */}
+      <ui-nav-menu>
+        {/* The first link MUST point to home (rel="home"). Shopify hides this but requires it. */}
+        <a href="/" rel="home" data-polaris-unstyled="true" onClick={(e) => { e.preventDefault(); setCurrentTab('/'); }}>Settings & Tiers</a>
+        {/* Visible secondary tab in the sidebar */}
+        <a href="/preview" data-polaris-unstyled="true" onClick={(e) => { e.preventDefault(); setCurrentTab('/preview'); }}>Live Drawer Preview</a>
+      </ui-nav-menu>
+
       <div style={{ width: '100%', display: 'block', opacity: 1 }}>
         <BlockStack gap="400">
-          
-          <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
           
           <div style={{ marginTop: '16px' }}>
             {banner && (
@@ -154,7 +166,7 @@ export default function App() {
               </div>
             )}
 
-            {selectedTab === 0 ? (
+            {currentTab === '/' ? (
               /* TAB 1: THE CONFIGURATION INTERFACE */
               <Layout>
                 <Layout.Section>
@@ -254,17 +266,12 @@ export default function App() {
 
                 <Layout.Section>
                   <div style={{ display: 'flex', justifyContent: 'center', background: '#f1f2f4', padding: '40px 10px', borderRadius: '8px', border: '1px dashed #c9cccf' }}>
-                    
-                    {/* SIMULATED CART DRAWER CONTAINER */}
                     <div style={{ width: '380px', background: '#ffffff', boxShadow: '0px 4px 20px rgba(0,0,0,0.15)', borderRadius: '4px', display: 'flex', flexDirection: 'column', height: '550px', overflow: 'hidden', border: '1px solid #e1e3e5' }}>
-                      
-                      {/* Drawer Header */}
                       <div style={{ padding: '16px', borderBottom: '1px solid #e1e3e5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#202223' }}>Your Cart Drawer</span>
                         <span style={{ cursor: 'pointer', fontSize: '18px', color: '#6d7175' }}>✕</span>
                       </div>
 
-                      {/* DYNAMIC PROGRESS BAR REGION */}
                       <div style={{ padding: '16px', background: '#fafbfb', borderBottom: '1px solid #e1e3e5' }}>
                         <div style={{ textAlign: 'center', marginBottom: '8px', color: textColor, fontWeight: '500', fontSize: '13px' }}>
                           {nextMilestone ? (
@@ -274,12 +281,10 @@ export default function App() {
                           )}
                         </div>
 
-                        {/* Bar Track Background */}
                         <div style={{ width: '100%', height: '12px', background: '#e1e3e5', borderRadius: '6px', overflow: 'hidden', position: 'relative', marginBottom: '12px' }}>
                           <div style={{ width: `${progressPercentage}%`, height: '100%', background: barColor, transition: 'width 0.3s ease-in-out' }} />
                         </div>
 
-                        {/* Display active unlocked goals */}
                         {unlockedMilestones.length > 0 && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {unlockedMilestones.map((m, i) => (
@@ -292,7 +297,6 @@ export default function App() {
                         )}
                       </div>
 
-                      {/* Dummy Cart Items Area */}
                       <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto' }}>
                         <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #f1f2f4', paddingBottom: '12px' }}>
                           <div style={{ width: '60px', height: '60px', background: '#f1f2f4', borderRadius: '4px' }} />
@@ -304,7 +308,6 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Drawer Footer Subtotal Panel */}
                       <div style={{ padding: '16px', borderTop: '1px solid #e1e3e5', background: '#ffffff' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontWeight: 'bold' }}>
                           <span>Subtotal</span>
@@ -315,7 +318,6 @@ export default function App() {
                         </button>
                       </div>
                     </div>
-
                   </div>
                 </Layout.Section>
               </Layout>
