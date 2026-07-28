@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import 'dotenv/config';
 import path from 'path';
-import fs from 'fs'; 
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import shopify from './shopify.js';
@@ -17,13 +17,8 @@ const app = express();
 // CRITICAL FOR RENDER DEPLOYMENTS: Trusts proxy headers from Render's load balancers
 app.set('trust proxy', true);
 
-// Global Tunnel Bypass Middleware
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, ngrok-skip-browser-warning');
-  res.setHeader('ngrok-skip-browser-warning', 'true');
-  next();
-});
+
+
 
 // Establish connection to database instance
 mongoose.connect(process.env.MONGO_URI)
@@ -46,16 +41,43 @@ app.use(express.static(DETECTED_STATIC_PATH, { index: false }));
 // 3. Shopify Installation Handshake Routes
 app.get(shopify.config.auth.path, shopify.auth.begin());
 app.get(
-  shopify.config.auth.callbackPath, 
-  shopify.auth.callback(), 
+  shopify.config.auth.callbackPath,
+  shopify.auth.callback(),
   shopify.redirectToShopifyOrAppRoot()
 );
+// GET: Fetch configuration for a merchant store when dashboard mounts
+app.get(
+  '/api/milestones',
+  shopify.validateAuthenticatedSession(),
+  async (req, res) => {
+    try {
+      const session = res.locals.shopify.session;
 
+      const config = await Milestone.findOne({ shop: session.shop });
+
+      if (!config) {
+        // Fallback baseline defaults if merchant has never saved configuration before
+        return res.status(200).json({
+          success: true,
+          data: {
+            barColor: '#008060',
+            textColor: '#000000',
+            milestones: []
+          }
+        });
+      }
+
+      res.status(200).json({ success: true, data: config });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
 // 4. API Endpoints
 app.post(
-  '/api/milestones', 
-  express.json(), 
-  shopify.validateAuthenticatedSession(), 
+  '/api/milestones',
+  express.json(),
+  shopify.validateAuthenticatedSession(),
   async (req, res) => {
     try {
       const session = res.locals.shopify.session;

@@ -1,23 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Page, Layout, Card, Text, TextField,
-  Button, BlockStack, InlineStack, Bleed, Divider, Banner
+import { 
+  Page, Layout, Card, Text, TextField, 
+  Button, BlockStack, InlineStack, Bleed, Divider, Banner, Spinner
 } from '@shopify/polaris';
 
 export default function App() {
   const [barColor, setBarColor] = useState('#008060');
   const [textColor, setTextColor] = useState('#000000');
-  const [milestones, setMilestones] = useState([
-    { threshold: 50, rewardText: '', iconUrl: 'https://cdn.shopify.com/s/files/1/0000/0000/files/gift.png' }
-  ]);
+  const [milestones, setMilestones] = useState([]);
 
-  // App UI feedback states
+  // App UI operational feedback states
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState(null);
 
-  // Automatically extract shop domain from the window context URL parameters
-  const urlParams = new URLSearchParams(window.location.search);
-  const shopDomain = urlParams.get('shop') || 'test-store.myshopify.com';
+  // Helper function to dynamically grab an App Bridge session token
+  const getSessionToken = async () => {
+    if (window.shopify && typeof window.shopify.idToken === "function") {
+      return await window.shopify.idToken();
+    }
+    return "";
+  };
+
+  // 1. FETCH DATA FROM MONGODB ON APP LAUNCH
+  useEffect(() => {
+    const fetchSavedConfig = async () => {
+      try {
+        const token = await getSessionToken();
+        const response = await fetch('/api/milestones', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const resData = await response.json();
+        if (response.ok && resData.success && resData.data) {
+          setBarColor(resData.data.barColor || '#008060');
+          setTextColor(resData.data.textColor || '#000000');
+          
+          // Map MongoDB schema array values smoothly back into React structure
+          if (resData.data.milestones && resData.data.milestones.length > 0) {
+            setMilestones(resData.data.milestones.map(m => ({
+              threshold: m.threshold,
+              rewardText: m.rewardText,
+              iconUrl: m.iconUrl || 'https://cdn.shopify.com/s/files/1/0000/0000/files/gift.png'
+            })));
+          } else {
+            // Seed a clean row if data collection arrays return blank
+            setMilestones([{ threshold: 50, rewardText: '', iconUrl: 'https://cdn.shopify.com/s/files/1/0000/0000/files/gift.png' }]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch configurations from server database:", err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchSavedConfig();
+  }, []);
 
   const handleMilestoneChange = (index, field, value) => {
     const updated = [...milestones];
@@ -34,6 +76,7 @@ export default function App() {
     setMilestones(updated);
   };
 
+  // 2. POST UPDATE DATA CONFIGURATIONS BACK TO DATABASE
   const saveSettings = async () => {
     setLoading(true);
     setBanner(null);
@@ -41,27 +84,20 @@ export default function App() {
     const payload = {
       barColor,
       textColor,
-      // Converting back to dollar amounts or passing thresholds directly
       milestones: milestones.map(m => ({
         threshold: Number(m.threshold),
-        rewardText: m.rewardText
+        rewardText: m.rewardText,
+        iconUrl: m.iconUrl
       }))
     };
 
     try {
-      // 1. Retrieve the session token from Shopify App Bridge if globally available
-      // (Or use the useAuthenticatedFetch() hook if your template provides it)
-      let token = "";
-      if (window.shopify && typeof window.shopify.idToken === "function") {
-        token = await window.shopify.idToken();
-      }
-
-      // 2. Fire the post request to your exact mounted endpoint
+      const token = await getSessionToken();
       const response = await fetch('/api/milestones', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Pass authentication token to clear shopify.validateAuthenticatedSession()
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });
@@ -91,6 +127,14 @@ export default function App() {
     }
   };
 
+  if (initialLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <Spinner accessibilityLabel="Loading milestone parameters" size="large" />
+      </div>
+    );
+  }
+
   return (
     <Page title="Milestone Cart Drawer Dashboard">
       <Layout>
@@ -110,39 +154,46 @@ export default function App() {
                 <Text as="p" color="subdued">Define spending targets (in dollars) that customers must cross to unlock rewards.</Text>
                 <Divider />
 
-                {milestones.map((milestone, index) => (
-                  <InlineStack key={index} gap="400" align="space-between" blockAlign="center">
-                    <div style={{ flex: 1 }}>
-                      <TextField
-                        label="Spend Threshold ($)"
-                        type="number"
-                        value={milestone.threshold}
-                        onChange={(val) => handleMilestoneChange(index, 'threshold', val)}
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div style={{ flex: 2 }}>
-                      <TextField
-                        label="Reward Banner Text"
-                        value={milestone.rewardText}
-                        onChange={(val) => handleMilestoneChange(index, 'rewardText', val)}
-                        placeholder="e.g. Free Shipping unlocked!"
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div style={{ flex: 1.5 }}>
-                      <TextField
-                        label="Prize Icon Link"
-                        value={milestone.iconUrl}
-                        onChange={(val) => handleMilestoneChange(index, 'iconUrl', val)}
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div style={{ paddingTop: '24px' }}>
-                      <Button tone="critical" variant="plain" onClick={() => removeMilestoneRow(index)}>Remove</Button>
-                    </div>
-                  </InlineStack>
-                ))}
+                {milestones.length === 0 ? (
+                  <Text as="p" color="subdued">No milestones added yet. Click below to add one.</Text>
+                ) : (
+                  milestones.map((milestone, index) => (
+                    <InlineStack key={index} gap="400" align="space-between" blockAlign="center">
+                      <div style={{ flex: 1 }}>
+                        <TextField
+                          label="Spend Threshold ($)"
+                          type="number"
+                          value={milestone.threshold}
+                          onChange={(val) => handleMilestoneChange(index, 'threshold', val)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div style={{ flex: 2 }}>
+                        <TextField
+                          label="Reward Banner Text"
+                          value={milestone.rewardText}
+                          onChange={(val) => handleMilestoneChange(index, 'rewardText', val)}
+                          placeholder="e.g. Free Shipping unlocked!"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div style={{ flex: 1.5 }}>
+                        <TextField
+                          label="Prize Icon Link"
+                          value={milestone.iconUrl}
+                          onChange={(val) => handleMilestoneChange(index, 'iconUrl', val)}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div style={{ paddingTop: '24px' }}>
+                        {/* Inline Delete Button Pattern */}
+                        <Button tone="critical" variant="plain" onClick={() => removeMilestoneRow(index)}>
+                          Remove
+                        </Button>
+                      </div>
+                    </InlineStack>
+                  ))
+                )}
 
                 <InlineStack align="start">
                   <Button onClick={addMilestoneRow}>Add New Tier Milestone</Button>
@@ -166,4 +217,4 @@ export default function App() {
       </Layout>
     </Page>
   );
-} 
+}
