@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Page, Layout, Card, Text, TextField, 
-  Button, BlockStack, InlineStack, Bleed, Divider, Banner 
+import {
+  Page, Layout, Card, Text, TextField,
+  Button, BlockStack, InlineStack, Bleed, Divider, Banner
 } from '@shopify/polaris';
 
 export default function App() {
@@ -10,7 +10,7 @@ export default function App() {
   const [milestones, setMilestones] = useState([
     { threshold: 50, rewardText: '', iconUrl: 'https://cdn.shopify.com/s/files/1/0000/0000/files/gift.png' }
   ]);
-  
+
   // App UI feedback states
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState(null);
@@ -38,27 +38,30 @@ export default function App() {
     setLoading(true);
     setBanner(null);
 
-    // 1. Build the payload matching your Mongoose models layout
     const payload = {
-      shopDomain,
-      uiSettings: {
-        progressBarColor: barColor,
-        textColor: textColor
-      },
-      // Mapping rows to match your exact Milestone schema fields
+      barColor,
+      textColor,
+      // Converting back to dollar amounts or passing thresholds directly
       milestones: milestones.map(m => ({
-        targetAmount: Number(m.threshold),
-        prizeName: m.rewardText || "Unlocked Reward",
-        prizeIconUrl: m.iconUrl
+        threshold: Number(m.threshold),
+        rewardText: m.rewardText
       }))
     };
 
     try {
-      // 2. Fire the live post request to your Render backend configuration endpoint
-      const response = await fetch('/api/admin/milestones', {
+      // 1. Retrieve the session token from Shopify App Bridge if globally available
+      // (Or use the useAuthenticatedFetch() hook if your template provides it)
+      let token = "";
+      if (window.shopify && typeof window.shopify.idToken === "function") {
+        token = await window.shopify.idToken();
+      }
+
+      // 2. Fire the post request to your exact mounted endpoint
+      const response = await fetch('/api/milestones', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Pass authentication token to clear shopify.validateAuthenticatedSession()
         },
         body: JSON.stringify(payload)
       });
@@ -106,33 +109,33 @@ export default function App() {
                 <Text variant="headingMd" as="h2">Configure Reward Milestones</Text>
                 <Text as="p" color="subdued">Define spending targets (in dollars) that customers must cross to unlock rewards.</Text>
                 <Divider />
-                
+
                 {milestones.map((milestone, index) => (
                   <InlineStack key={index} gap="400" align="space-between" blockAlign="center">
                     <div style={{ flex: 1 }}>
-                      <TextField 
-                        label="Spend Threshold ($)" 
-                        type="number" 
-                        value={milestone.threshold} 
-                        onChange={(val) => handleMilestoneChange(index, 'threshold', val)} 
-                        autoComplete="off" 
+                      <TextField
+                        label="Spend Threshold ($)"
+                        type="number"
+                        value={milestone.threshold}
+                        onChange={(val) => handleMilestoneChange(index, 'threshold', val)}
+                        autoComplete="off"
                       />
                     </div>
                     <div style={{ flex: 2 }}>
-                      <TextField 
-                        label="Reward Banner Text" 
-                        value={milestone.rewardText} 
-                        onChange={(val) => handleMilestoneChange(index, 'rewardText', val)} 
-                        placeholder="e.g. Free Shipping unlocked!" 
-                        autoComplete="off" 
+                      <TextField
+                        label="Reward Banner Text"
+                        value={milestone.rewardText}
+                        onChange={(val) => handleMilestoneChange(index, 'rewardText', val)}
+                        placeholder="e.g. Free Shipping unlocked!"
+                        autoComplete="off"
                       />
                     </div>
                     <div style={{ flex: 1.5 }}>
-                      <TextField 
-                        label="Prize Icon Link" 
-                        value={milestone.iconUrl} 
-                        onChange={(val) => handleMilestoneChange(index, 'iconUrl', val)} 
-                        autoComplete="off" 
+                      <TextField
+                        label="Prize Icon Link"
+                        value={milestone.iconUrl}
+                        onChange={(val) => handleMilestoneChange(index, 'iconUrl', val)}
+                        autoComplete="off"
                       />
                     </div>
                     <div style={{ paddingTop: '24px' }}>
@@ -140,7 +143,7 @@ export default function App() {
                     </div>
                   </InlineStack>
                 ))}
-                
+
                 <InlineStack align="start">
                   <Button onClick={addMilestoneRow}>Add New Tier Milestone</Button>
                 </InlineStack>
@@ -163,4 +166,4 @@ export default function App() {
       </Layout>
     </Page>
   );
-}
+} 
