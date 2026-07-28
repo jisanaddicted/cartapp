@@ -61,19 +61,31 @@ app.post(
       const session = res.locals.shopify.session;
       const { barColor, textColor, milestones } = req.body;
 
+      // 🔍 DEBUG LOGS: Watch your Render terminal logs to see what prints here!
+      console.log("---------------- API HIT ----------------");
+      console.log("Shop Session Domain:", session?.shop);
+      console.log("Incoming Body Data:", JSON.stringify(req.body, null, 2));
+
+      if (!session?.shop) {
+        return res.status(400).json({ success: false, error: "Shop domain session token missing." });
+      }
+
       const updatedConfig = await Milestone.findOneAndUpdate(
         { shop: session.shop },
         { barColor, textColor, milestones },
         { new: true, upsert: true }
       );
 
+      console.log("MongoDB Saved Result:", updatedConfig);
+      console.log("-----------------------------------------");
+
       res.status(200).json({ success: true, data: updatedConfig });
     } catch (error) {
+      console.error("❌ Database Write Error:", error);
       res.status(500).json({ success: false, error: error.message });
     }
   }
 );
-
 // 5. Exit-iframe handler
 app.get('/exitiframe', (req, res) => {
   const { shop } = req.query;
