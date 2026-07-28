@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Page, Layout, Card, Text, TextField, 
+import {
+  Page, Layout, Card, Text, TextField,
   Button, BlockStack, InlineStack, Bleed, Divider, Banner, Spinner, Tabs
 } from '@shopify/polaris';
 
@@ -46,7 +46,7 @@ export default function App() {
         if (response.ok && resData.success && resData.data) {
           setBarColor(resData.data.barColor || '#008060');
           setTextColor(resData.data.textColor || '#000000');
-          
+
           if (resData.data.milestones && resData.data.milestones.length > 0) {
             setMilestones(resData.data.milestones.map(m => ({
               threshold: m.threshold,
@@ -59,7 +59,8 @@ export default function App() {
         }
       } catch (err) {
         console.error("Failed to fetch configurations:", err);
-      } finaly {
+        // ✅ CORRECT
+      } finally {
         setInitialLoading(false);
       }
     };
@@ -133,7 +134,7 @@ export default function App() {
   const sortedMilestones = [...milestones].sort((a, b) => a.threshold - b.threshold);
   const nextMilestone = sortedMilestones.find(m => simulatedCartTotal < m.threshold);
   const unlockedMilestones = sortedMilestones.filter(m => simulatedCartTotal >= m.threshold);
-  
+
   const maxThreshold = sortedMilestones.length > 0 ? sortedMilestones[sortedMilestones.length - 1].threshold : 100;
   const progressPercentage = Math.min((simulatedCartTotal / (maxThreshold || 1)) * 100, 100);
 
@@ -228,18 +229,18 @@ export default function App() {
                   <BlockStack gap="400">
                     <Text variant="headingMd" as="h2">Simulate Cart Total</Text>
                     <Text as="p" color="subdued">Adjust this slider value to see how the cart drawer automatically calculates tiers dynamically.</Text>
-                    <TextField 
-                      label="Current Cart Value ($)" 
-                      type="number" 
-                      value={simulatedCartTotal} 
-                      onChange={(v) => setSimulatedCartTotal(Number(v))} 
-                      autoComplete="off" 
+                    <TextField
+                      label="Current Cart Value ($)"
+                      type="number"
+                      value={simulatedCartTotal}
+                      onChange={(v) => setSimulatedCartTotal(Number(v))}
+                      autoComplete="off"
                     />
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max={maxThreshold + 50} 
-                      value={simulatedCartTotal} 
+                    <input
+                      type="range"
+                      min="0"
+                      max={maxThreshold + 50}
+                      value={simulatedCartTotal}
                       onChange={(e) => setSimulatedCartTotal(Number(e.target.value))}
                       style={{ width: '100%', accentColor: barColor, cursor: 'pointer' }}
                     />
@@ -249,10 +250,10 @@ export default function App() {
 
               <Layout.Section>
                 <div style={{ display: 'flex', justifyContent: 'center', background: '#f1f2f4', padding: '40px 10px', borderRadius: '8px', border: '1px dashed #c9cccf' }}>
-                  
+
                   {/* SIMULATED CART DRAWER CONTAINER */}
                   <div style={{ width: '380px', background: '#ffffff', boxShadow: '0px 4px 20px rgba(0,0,0,0.15)', borderRadius: '4px', display: 'flex', flexDirection: 'column', height: '550px', overflow: 'hidden', border: '1px solid #e1e3e5' }}>
-                    
+
                     {/* Drawer Header */}
                     <div style={{ padding: '16px', borderBottom: '1px solid #e1e3e5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#202223' }}>Your Cart Drawer</span>
