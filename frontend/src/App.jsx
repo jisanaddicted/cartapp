@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Page, Layout, Card, Text, TextField, 
-  Button, BlockStack, InlineStack, Bleed, Divider, Banner, Spinner
-} from '@shopify/polaris';
+import { Page, BlockStack, Banner, Spinner } from '@shopify/polaris';
+
+// 🚀 Clean, Isolated Tab Views Imported
+import SettingsTab from '/components/MilestoneForm.jsx';
+import PreviewTab from '/components/PreviewTab';
 
 export default function App() {
   const [barColor, setBarColor] = useState('#008060');
@@ -16,9 +17,6 @@ export default function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState(null);
-
-  // Simulated Drawer states
-  const [simulatedCartTotal, setSimulatedCartTotal] = useState(40);
 
   const getSessionToken = async () => {
     if (window.shopify && typeof window.shopify.idToken === "function") {
@@ -64,8 +62,7 @@ export default function App() {
 
   // Sync App Bridge tab clicks with your React component state
   useEffect(() => {
-    const handleNavigation = (event) => {
-      // Intercept App Bridge context if navigating within the frame
+    const handleNavigation = () => {
       const path = window.location.pathname;
       setCurrentTab(path);
     };
@@ -136,17 +133,10 @@ export default function App() {
     );
   }
 
-  const sortedMilestones = [...milestones].sort((a, b) => a.threshold - b.threshold);
-  const nextMilestone = sortedMilestones.find(m => simulatedCartTotal < m.threshold);
-  const unlockedMilestones = sortedMilestones.filter(m => simulatedCartTotal >= m.threshold);
-  
-  const maxThreshold = sortedMilestones.length > 0 ? sortedMilestones[sortedMilestones.length - 1].threshold : 100;
-  const progressPercentage = Math.min((simulatedCartTotal / (maxThreshold || 1)) * 100, 100);
-
   return (
     <Page title="Milestone Progress Manager">
       
-      {/* 🚀 ADD THIS: SHOPIFY APP BRIDGE NAVIGATION COMPONENT */}
+      {/* 🚀 SHOPIFY APP BRIDGE NAVIGATION COMPONENT */}
       <ui-nav-menu>
         {/* The first link MUST point to home (rel="home"). Shopify hides this but requires it. */}
         <a href="/" rel="home" data-polaris-unstyled="true" onClick={(e) => { e.preventDefault(); setCurrentTab('/'); }}>Settings & Tiers</a>
@@ -166,161 +156,26 @@ export default function App() {
               </div>
             )}
 
+            {/* 🚀 CONDITIONAL RENDERING DELIVERED TO EXPORTED SUB-COMPONENTS */}
             {currentTab === '/' ? (
-              /* TAB 1: THE CONFIGURATION INTERFACE */
-              <Layout>
-                <Layout.Section>
-                  <BlockStack gap="500">
-                    <Card>
-                      <BlockStack gap="400">
-                        <Text variant="headingMd" as="h2">Configure Reward Milestones</Text>
-                        <Text as="p" color="subdued">Define spending targets (in dollars) that customers must cross to unlock rewards.</Text>
-                        <Divider />
-
-                        {milestones.length === 0 ? (
-                          <Text as="p" color="subdued">No milestones added yet. Click below to add one.</Text>
-                        ) : (
-                          milestones.map((milestone, index) => (
-                            <InlineStack key={index} gap="400" align="space-between" blockAlign="center">
-                              <div style={{ flex: 1 }}>
-                                <TextField
-                                  label="Spend Threshold ($)"
-                                  type="number"
-                                  value={milestone.threshold}
-                                  onChange={(val) => handleMilestoneChange(index, 'threshold', val)}
-                                  autoComplete="off"
-                                />
-                              </div>
-                              <div style={{ flex: 2 }}>
-                                <TextField
-                                  label="Reward Banner Text"
-                                  value={milestone.rewardText}
-                                  onChange={(val) => handleMilestoneChange(index, 'rewardText', val)}
-                                  placeholder="e.g. Free Shipping unlocked!"
-                                  autoComplete="off"
-                                />
-                              </div>
-                              <div style={{ flex: 1.5 }}>
-                                <TextField
-                                  label="Prize Icon Link"
-                                  value={milestone.iconUrl}
-                                  onChange={(val) => handleMilestoneChange(index, 'iconUrl', val)}
-                                  autoComplete="off"
-                                />
-                              </div>
-                              <div style={{ paddingTop: '24px' }}>
-                                <Button tone="critical" variant="plain" onClick={() => removeMilestoneRow(index)}>
-                                  Remove
-                                </Button>
-                              </div>
-                            </InlineStack>
-                          ))
-                        )}
-
-                        <InlineStack align="start">
-                          <Button onClick={addMilestoneRow}>Add New Tier Milestone</Button>
-                        </InlineStack>
-                      </BlockStack>
-                    </Card>
-                  </BlockStack>
-                </Layout.Section>
-
-                <Layout.Section variant="oneThird">
-                  <Card>
-                    <BlockStack gap="400">
-                      <Text variant="headingMd" as="h2">Progress Bar Theme</Text>
-                      <TextField label="Fill Bar Color Hex Code" value={barColor} onChange={setBarColor} autoComplete="off" />
-                      <TextField label="Text Status Font Color" value={textColor} onChange={setTextColor} autoComplete="off" />
-                      <Bleed marginInlineStart="400" marginInlineEnd="400"><Divider /></Bleed>
-                      <Button variant="primary" loading={loading} onClick={saveSettings} fullWidth>Save Settings Configuration</Button>
-                    </BlockStack>
-                  </Card>
-                </Layout.Section>
-              </Layout>
+              <SettingsTab 
+                milestones={milestones}
+                barColor={barColor}
+                textColor={textColor}
+                loading={loading}
+                setBarColor={setBarColor}
+                setTextColor={setTextColor}
+                handleMilestoneChange={handleMilestoneChange}
+                addMilestoneRow={addMilestoneRow}
+                removeMilestoneRow={removeMilestoneRow}
+                saveSettings={saveSettings}
+              />
             ) : (
-              /* TAB 2: LIVE SIMULATED CART DRAWER PREVIEW */
-              <Layout>
-                <Layout.Section variant="oneThird">
-                  <Card>
-                    <BlockStack gap="400">
-                      <Text variant="headingMd" as="h2">Simulate Cart Total</Text>
-                      <Text as="p" color="subdued">Adjust this slider value to see how the cart drawer automatically calculates tiers dynamically.</Text>
-                      <TextField 
-                        label="Current Cart Value ($)" 
-                        type="number" 
-                        value={simulatedCartTotal} 
-                        onChange={(v) => setSimulatedCartTotal(Number(v))} 
-                        autoComplete="off" 
-                      />
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max={maxThreshold + 50} 
-                        value={simulatedCartTotal} 
-                        onChange={(e) => setSimulatedCartTotal(Number(e.target.value))}
-                        style={{ width: '100%', accentColor: barColor, cursor: 'pointer' }}
-                      />
-                    </BlockStack>
-                  </Card>
-                </Layout.Section>
-
-                <Layout.Section>
-                  <div style={{ display: 'flex', justifyContent: 'center', background: '#f1f2f4', padding: '40px 10px', borderRadius: '8px', border: '1px dashed #c9cccf' }}>
-                    <div style={{ width: '380px', background: '#ffffff', boxShadow: '0px 4px 20px rgba(0,0,0,0.15)', borderRadius: '4px', display: 'flex', flexDirection: 'column', height: '550px', overflow: 'hidden', border: '1px solid #e1e3e5' }}>
-                      <div style={{ padding: '16px', borderBottom: '1px solid #e1e3e5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#202223' }}>Your Cart Drawer</span>
-                        <span style={{ cursor: 'pointer', fontSize: '18px', color: '#6d7175' }}>✕</span>
-                      </div>
-
-                      <div style={{ padding: '16px', background: '#fafbfb', borderBottom: '1px solid #e1e3e5' }}>
-                        <div style={{ textAlign: 'center', marginBottom: '8px', color: textColor, fontWeight: '500', fontSize: '13px' }}>
-                          {nextMilestone ? (
-                            <span>You are <strong>${nextMilestone.threshold - simulatedCartTotal}</strong> away from <strong>{nextMilestone.rewardText || 'next tier'}</strong>!</span>
-                          ) : (
-                            <span>🎉 Congrats! You have unlocked all tier rewards!</span>
-                          )}
-                        </div>
-
-                        <div style={{ width: '100%', height: '12px', background: '#e1e3e5', borderRadius: '6px', overflow: 'hidden', position: 'relative', marginBottom: '12px' }}>
-                          <div style={{ width: `${progressPercentage}%`, height: '100%', background: barColor, transition: 'width 0.3s ease-in-out' }} />
-                        </div>
-
-                        {unlockedMilestones.length > 0 && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {unlockedMilestones.map((m, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#008060' }}>
-                                <span>✅</span>
-                                <span>Unlocked: <strong>{m.rewardText || `Tier $${m.threshold}`}</strong></span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto' }}>
-                        <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #f1f2f4', paddingBottom: '12px' }}>
-                          <div style={{ width: '60px', height: '60px', background: '#f1f2f4', borderRadius: '4px' }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: '500', fontSize: '14px' }}>Simulated Store Item</div>
-                            <div style={{ fontSize: '12px', color: '#6d7175', marginTop: '2px' }}>Qty: 1</div>
-                            <div style={{ fontWeight: '600', marginTop: '6px', fontSize: '13px' }}>${simulatedCartTotal}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ padding: '16px', borderTop: '1px solid #e1e3e5', background: '#ffffff' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontWeight: 'bold' }}>
-                          <span>Subtotal</span>
-                          <span>${simulatedCartTotal}.00</span>
-                        </div>
-                        <button style={{ width: '100%', background: '#008060', color: 'white', border: 'none', padding: '12px', borderRadius: '4px', fontWeight: '600', cursor: 'not-allowed' }}>
-                          Proceed to Checkout
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </Layout.Section>
-              </Layout>
+              <PreviewTab 
+                milestones={milestones}
+                barColor={barColor}
+                textColor={textColor}
+              />
             )}
           </div>
         </BlockStack>
