@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Page, BlockStack, Banner, Spinner } from '@shopify/polaris';
 
 // 🚀 Clean, Isolated Tab Views Imported
-import SettingsTab from '/components/MilestoneForm.jsx';
-import PreviewTab from '/components/PreviewTab';
+import SettingsTab from './components/MilestoneForm.jsx';
+import PreviewTab from './components/PreviewTab';
 
 export default function App() {
   const [barColor, setBarColor] = useState('#008060');
