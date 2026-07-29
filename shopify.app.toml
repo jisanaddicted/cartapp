@@ -12,3 +12,14 @@ redirect_urls = [
   "https://cartapp-q995.onrender.com/api/auth",
   "https://cartapp-q995.onrender.com/api/auth/callback"
 ]
+# Main entry point configuration
+[extensions.ui]
+type = "admin-app-link"
+handle = "tiered-progress-bar-setup-manager"
+title = "Milestone Setup"
+path = "/app"
+
+# Secondary sub-page sidebar link definition entry
+[[extensions.ui.subpages]]
+title = "Real-time Preview Window"
+path = "/app/preview"
