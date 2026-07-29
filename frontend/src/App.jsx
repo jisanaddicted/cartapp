@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import { Page } from '@shopify/polaris';
 import MilestoneForm from './components/MilestoneForm.jsx';
+import PreviewTab from './components/PreviewTab.jsx';
 
 export default function App() {
   // State for tracking configuration data variables
@@ -9,11 +11,11 @@ export default function App() {
   const [textColor, setTextColor] = useState('#202223');
   const [loading, setLoading] = useState(false);
 
-  // Optional: Fetch stored configurations from MongoDB on mount
+  // Fetch stored configurations from MongoDB on mount
   useEffect(() => {
     async function fetchCurrentSettings() {
       try {
-        const response = await fetch('/api/milestones'); // Adjust URL endpoint based on Express server routes
+        const response = await fetch('/api/milestones'); // Points to backend layout route
         if (response.ok) {
           const data = await response.json();
           if (data) {
@@ -48,7 +50,7 @@ export default function App() {
   const saveSettings = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/milestones', { // Make sure this hits your valid Node production API route
+      const response = await fetch('/api/milestones', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json'
@@ -67,21 +69,55 @@ export default function App() {
   };
 
   return (
-    <Page title="Milestone Configuration Defaults">
-      <div style={{ marginTop: '20px' }}>
-        <MilestoneForm
-          milestones={milestones}
-          barColor={barColor}
-          textColor={textColor}
-          loading={loading}
-          setBarColor={setBarColor}
-          setTextColor={setTextColor}
-          handleMilestoneChange={handleMilestoneChange}
-          addMilestoneRow={addMilestoneRow}
-          removeMilestoneRow={removeMilestoneRow}
-          saveSettings={saveSettings}
+    <>
+      {/* 
+        Shopify App Bridge reads <ui-nav-menu> automatically to inject 
+        navigation links cleanly into the Shopify Admin Sidebar shell.
+      */}
+      <ui-nav-menu>
+        <Link to="/app">Milestone Setup</Link>
+        <Link to="/app/preview">Real-time Preview Window</Link>
+      </ui-nav-menu>
+
+      {/* Client-side routing execution layout inside the embedded iframe */}
+      <Routes>
+        <Route 
+          path="/app" 
+          element={
+            <Page title="Milestone Configuration Defaults">
+              <div style={{ marginTop: '20px' }}>
+                <MilestoneForm
+                  milestones={milestones}
+                  barColor={barColor}
+                  textColor={textColor}
+                  loading={loading}
+                  setBarColor={setBarColor}
+                  setTextColor={setTextColor}
+                  handleMilestoneChange={handleMilestoneChange}
+                  addMilestoneRow={addMilestoneRow}
+                  removeMilestoneRow={removeMilestoneRow}
+                  saveSettings={saveSettings}
+                />
+              </div>
+            </Page>
+          } 
         />
-      </div>
-    </Page>
+        
+        <Route 
+          path="/app/preview" 
+          element={
+            <Page title="Real-time Drawer Preview Window">
+              <div style={{ marginTop: '20px' }}>
+                <PreviewTab
+                  milestones={milestones}
+                  barColor={barColor}
+                  textColor={textColor}
+                />
+              </div>
+            </Page>
+          } 
+        />
+      </Routes>
+    </>
   );
 }
